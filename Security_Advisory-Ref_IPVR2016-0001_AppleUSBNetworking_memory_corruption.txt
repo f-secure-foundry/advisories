@@ -1,0 +1,81 @@
+CVE-2016-1734 - AppleUSBNetworking memory corruption
+
+Inverse Path (https://inversepath.com) identified a potential security
+vulnerability in the way OS X handles RNDIS/Ethernet gadgets USB devices,
+advertising invalid USB descriptor information.
+
+The RNDIS driver is commonly used for emulating Ethernet TCP/IP connectivity
+on USB devices such as mobile phones or custom boards such as our USB armory
+(https://inversepath.com/usbarmory).
+
+While testing descriptor manipulation we found that a high-speed USB device,
+advertising specific descriptors which match full-speed values, caused the OS
+X instance to immediately panic and reboot once the device is plugged in and
+network traffic is generated from the device. This happens regardless of a
+user being logged in or not.
+
+The test scenario involves USB descriptors, for a high-speed USB device,
+configured with the following invalid values:
+
+bInterval      set to 32           in the Interrupt type Endpoint Descriptors
+wMaxPacketSize set to 1 x 64 bytes in the Bulk type Endpoint Descriptors
+
+These values are incorrect as normally bInterval is 9 and wMaxPacketSize is
+512 bytes on high-speed devices.
+
+The resulting panic report (which is sometimes, and not all times, generated)
+is as follows:
+
+*** Panic Report ***
+panic(cpu 0 caller 0xffffff8005f6bc0c): Failed mbuf validity check: mbuf
+0xffffff809ac55400 len -8 type 1 flags 0x2 data 0xffffff809ac554b8 rcvif en8
+ifflags 0x8863
+Backtrace (CPU 0), Frame : Return Address
+0xffffff809f60be20 : 0xffffff8005ce5307
+0xffffff809f60bea0 : 0xffffff8005f6bc0c
+0xffffff809f60bf60 : 0xffffff8005f6e819
+0xffffff809f60bfb0 : 0xffffff8005dd15d7
+
+The issue has been tested on OS X 10.11.1 (build version 15b42) using a
+MacBook Pro mid-2012 (Model A1278).
+
+The panic is triggered by network traffic being exchanged over the interface
+and not just the mere USB enumeration, therefore it seems that the invalid
+descriptors are negatively affecting the way Ethernet traffic is being parsed
+on OS X.
+
+A single packet, reproducing the scenario, has been identified to consistently
+trigger the crash.
+
+01:02:03.719455 Out 1a:55:89:a2:69:51 ethertype IPv6 (0x86dd), length 72:
+  (hlim 255, next-header ICMPv6 (58) payload length: 16)
+  fe80::1855:89ff:fea2:6951 > ff02::2: [icmp6 sum ok] ICMP6, router
+  solicitation, length 16
+
+	  source link-address option (1), length 8 (1): 1a:55:89:a2:69:51
+	0x0000:  6000 0000 0010 3aff fe80 0000 0000 0000  `.....:.........
+	0x0010:  1855 89ff fea2 6951 ff02 0000 0000 0000  .U....iQ........
+	0x0020:  0000 0000 0000 0002 8500 649c 0000 0000  ..........d.....
+	0x0030:  0101 1a55 89a2 6951                      ...U..iQ
+
+In cases where OS X "survives" the invalid enumeration, when the test packet
+is not immediately sent, invalid packets are witnessed being received on the
+OS X side. Such TCP/IP packets show contents from the payload of previous
+packets sent over the RNDIS interface, being detected as part of the header of
+new packets, hence generating invalid frames. This aspect is a clear
+indication of packet buffer misalignment.
+
+The issue has been addressed in OS X update v10.11.4 (Security Update
+2016-002), the official Apple description for the vulnerability follows:
+
+https://support.apple.com/en-ca/HT206167 - AppleUSBNetworking
+
+Available for: OS X El Capitan v10.11 to v10.11.3
+
+Impact:       An application may be able to execute arbitrary code with kernel
+              privileges.
+
+Description:  A memory corruption issue existed in the parsing of data from USB
+              devices. This issue was addressed through improved input validation.
+
+CVE-ID        CVE-2016-1734: Andrea Barisani and Andrej Rosano of Inverse Path

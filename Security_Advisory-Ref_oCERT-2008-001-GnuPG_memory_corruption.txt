@@ -1,0 +1,40 @@
+
+oCERT-2008-001 GnuPG memory corruption
+
+Description:
+
+A memory corruption bug exists in version 1.4.8 of the Gnu Privacy Guard, the
+issue also affects version 2.0.8.
+
+A selection of keys available from a public keyserver were found to cause a
+segmentation fault due to pointer corruption when imported via --refresh-keys
+or --import.
+
+It is not known whether the bug can be exploited to execute arbitrary code.
+Version 1.4.9 and 2.0.9 have been released addressing this issue.
+
+We would like to thank Werner Koch (wk [at] gnupg [dot] org) for promptly
+handling this issue.
+
+Affected version:
+
+GnuGP = 1.4.8, = 2.0.8
+
+Fixed version:
+
+GnuGP >= 1.4.9, >= 2.0.9
+
+Credit: Andrea Barisani, oCERT Team | Inverse Path
+
+CVE: CVE-2008-1530
+
+Timeline:
+
+2008-03-19: contacted gnupg maintainers and affected vendors
+2008-03-25: gnupg patched in SVN
+2008-03-26: gnupg 1.4.9, 2.0.9 released
+2008-03-26: advisory release
+2008-03-27: assigned CVE
+
+References:
+  https:://bugs.g10code.com/gnupg/issue894

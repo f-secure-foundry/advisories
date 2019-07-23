@@ -1,0 +1,220 @@
+Security advisory: High Assurance Boot (HABv4) bypass
+=====================================================
+
+The NXP i.MX53 System-on-Chip, main processor used in the USB armory Mk I board
+[1] design, suffers from vulnerabilities that allow bypass of the optional High
+Assurance Boot function (HABv4).
+
+The HABv4 [2] enables on-chip internal boot ROM authentication of the initial
+bootloader with a digital signature, establishing the first trust anchor for
+further code authentication.
+
+This functionality is commonly known as Secure Boot [3] and it can be activated
+by users who require authentication of the bootloader (e.g. U-Boot) to further
+maintain, and verify, trust of executed code.
+
+Quarkslab reported [4] to NXP, and subsequently to Inverse Path, two different
+techniques for bypassing HABv4 by means of exploiting validation errors in the
+SoC internal boot ROM [5], which are exposed before bootloader authentication
+takes place.
+
+While the two vulnerabilities have been initially reported for the i.MX6 SoC,
+Inverse Path evaluated that both issues also apply to the i.MX53 SoC, used on
+the USB armory Mk I.
+
+The HABv4 feature is not enabled by default on the USB armory Mk I and does not
+impact its normal operation. This advisory concerns only users that follow, and
+rely upon, the Secure Boot [3] procedure. See Impact section for a detailed
+analysis.
+
+X.509 parsing error (ERR010873)
+===============================
+
+The initial HABv4 secure booting process can be summarized as follows:
+
+1. Four Super Root Key (SRK) certification authorities are created.
+
+2. A hash of the four concatenated SRK public keys is permanently fused in
+   the SoC.
+
+3. To sign the bootloader the boot image is integrated with a Command Sequence
+   File (CSF), parsed by the SoC internal boot ROM in order to:
+
+   A. Load the SRK public keys and verify that their concatenated hash matches
+      the one fused in the SoC.
+
+   B. Load the CSF signing public key.
+
+   C. Authenticate the CSF signing public key with one of the SRK keys.
+
+   D. Authenticate the CSF commands, which include the bootloader signature.
+
+The vulnerability takes place in the X.509 parsing of the CSF certificate which
+includes the signing public key (3.B). An excessively long `keyUsage` tag in
+the certificate triggers a stack overflow that can be leveraged to jump
+directly to the bootloader, bypassing authentication.
+
+The X.509 parsing error allows creation of bootloader images that, despite
+having an invalid signature, can be successfully booted on a device with HABv4
+in 'Closed' state.
+
+The parsing error does not require knowledge of the SRK public keys matching
+the fused hash (SRK table), as the certificate parsing step (3.B) can be forced
+as first command of the CSF.
+
+Inverse Path developed its own PoC [6] for the parsing error to confirm its
+application on the i.MX53 SoC, integrating it with the `usbarmory_csftool`
+utility, used to create USB armory Mk I signed bootloader images, by means of
+the added `--hab_poc` flag.
+
+SDP protection bypass (ERR010872)
+=================================
+
+The i.MX53 boot ROM features a built-in recovery mode that allows execution of
+arbitrary code directly through USB when no other boot methods (e.g. microSD
+card) are detected.
+
+The Serial Download Protocol (SDP), used on such interface, is supposed to
+prevent arbitrary write access on boot ROM own memory when HABv4 is enabled.
+
+Such protection however suffer from incorrect validations, ultimately allowing
+overwrite of the boot ROM stack with consequent arbitrary code execution, which
+leads to HABv4 bypass.
+
+Impact
+======
+
+The HABv4 feature is not enabled by default on the USB armory Mk I and does not
+impact its normal operation.
+
+The Secure Boot [3] procedure is supported for specific use cases where
+authentication of the initial bootloader is required to further maintain a
+chain of trust.
+
+This scenario does not typically apply to Linux distributions, such as the USB
+armory Mk I default Debian image, as the chain of trust is typically lost
+between the kernel and userspace (and therefore tampering is always possible,
+regardless of Secure Boot).
+
+For environments with a complete chain of trust (e.g. embedded kernel ramdisk
+images) Secure Boot allows the first hardware anchor.
+
+The USB armory impact is evaluated with the following considerations:
+
+* The USB armory is an unconventional embedded device that promotes, through
+  its custom form factor, defensive uses where the device is never left
+  unattended and therefore preventing "Evil Maid" kind of attacks.
+
+  Also it should be emphasized that Secure Boot protects the hardware from
+  unauthenticated code, and not the other way around. Signed microSD cards can
+  always be executed on any USB armory board without HABv4 enabled.
+
+  For these reason the importance of Secure Boot, most valuable on unattended
+  hardware, is marginal unless physical tampering or replacement of a valid
+  microSD card is considered a potential threat.
+
+* The NXP Security Controller (SCCv2) Linux driver [7] allows AES encryption
+  using the USB armory Mk I SoC internal key. The key cannot be read, but only
+  used by means of the SCCv2, additionally the key is only activated when HABv4
+  is enabled.
+
+  The SCCv2 therefore allows device specific AES encryption/decryption and,
+  while the secret key is only activated when HABv4 secure state is assured,
+  compromise of the HABv4 does not constitute a key leak as it remains
+  unreadable to the CPU.
+
+  For this reason the SCCv2 functionality remains effective in terms of
+  restricting AES encryption/decryption to a specific device with its own
+  secret key.
+
+  Additionally the SCCv2 use cases promoted by Inverse Path, for the USB
+  armory, always consist of two-factor encryption. For instance the INTERLOCK
+  [8] encryption front-end allows optional support for the SCCv2 to derive
+  device specific keys always in combination with user provided passphrases.
+
+* The vulnerability remains critical for unattended setups that rely on the
+  combination of Secure Boot and SCCv2 to protect cryptographic secrets,
+  that are meant to be used without any user input (or network based
+  challenge/response validation of the SCCv2 secret key).
+
+  An example of such setup would be unattended deployments, without network
+  connectivity, such as licensing tokens.
+
+Affected P/Ns
+=============
+
+The reported [4] vulnerabilities affect High Assurance Boot version 4 (HABv4)
+present on multiple Freescale/NXP i.MX family of application processors.
+
+The i.MX53 family of processors, mounted on all USB armory Mk I boards, is
+affected by the X.509 parsing error and SDP protection bypass.
+
+Given that the internal boot ROM cannot be updated, only a new silicon revision
+by NXP, with an adequately patched boot ROM, can address the vulnerabilities.
+
+NXP has yet to provide publicly available part numbers addressing reported
+vulnerabilities as it has informed us that, at this time, more information can
+only be provided by NXP to their customers under NDA.
+
+If and when NXP will release a new i.MX53 silicon revision, addressing the
+findings, Inverse Path plans to evaluate sourcing of updated components for a
+new production batch of the USB armory Mk I board.
+
+The list of affected NXP application processors can be found in the i.MX
+Community post titled "i.MX & Vybrid Security Vulnerability Errata" [10].
+
+Contact
+=======
+
+Inverse Path has been working with the few customers that employ affected use
+cases to successfully implement mitigations.
+
+Any customer relying on Secure Boot on the USB armory product is welcome to
+contact <support@inversepath.com> for assistance in evaluating the potential
+impact and applicable mitigations.
+
+Credit
+======
+
+Vulnerability discovered and reported [4] by Guillaume Delugré and Kévin
+Szkudlapski of Quarkslab.
+
+i.MX53 PoC [6] developed by Andrea Barisani and Andrej Rosano of Inverse Path.
+
+CVE - NXP Erratum
+=================
+
+CVE-2017-7936 - ERR010872 ROM: Secure boot vulnerability when using the Serial Downloader
+CVE-2017-7932 - ERR010873 ROM: Secure boot vulnerability when authenticating a certificate
+
+Timeline
+========
+
+2017-05-18: Quarkslab presents findings at the 2017 Qualcomm Mobile Security
+            Summit [9], materials are not disclosed to the public at this time.
+2017-05-30: Quarkslab communicates embargo period until 2017-07-18.
+2017-05-30: Inverse Path proposes preliminary advisory release on 2017-06-05.
+2017-06-05: Inverse Path releases preliminary advisory.
+2017-06-06: added assigned CVE numbers.
+2017-07-19: Quarkslab public release of findings [4].
+2017-07-19: Inverse Path release of full advisory and i.MX53 PoC [6].
+2017-07-27: added link to i.MX Community post that lists affected P/Ns.
+
+References
+==========
+
+[1]  https://github.com/inversepath/usbarmory/wiki
+[2]  https://cache.freescale.com/files/32bit/doc/app_note/AN4581.pdf
+[3]  https://github.com/inversepath/usbarmory/wiki/Secure-boot
+[4]  https://blog.quarkslab.com/vulnerabilities-in-high-assurance-boot-of-nxp-imx-microprocessors.html
+[5]  https://github.com/inversepath/usbarmory/wiki/Internal-Boot-ROM
+[6]  https://github.com/inversepath/usbarmory/blob/master/software/secure_boot/usbarmory_csftool#L227
+[7]  https://github.com/inversepath/mxc-scc2
+[8]  https://github.com/inversepath/interlock
+[9]  https://qct-qualcomm.secure.force.com/QCTConference/GenericSitePage?eventname=2017Security&page=Summit%20Information
+[10] https://community.nxp.com/docs/DOC-334996
+
+Permalink
+=========
+
+https://github.com/inversepath/usbarmory/blob/master/software/secure_boot/Security_Advisory-Ref_QBVR2017-0001.txt

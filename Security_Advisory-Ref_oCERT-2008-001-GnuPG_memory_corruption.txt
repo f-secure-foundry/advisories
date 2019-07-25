@@ -1,4 +1,3 @@
-
 oCERT-2008-001 GnuPG memory corruption
 
 Description:

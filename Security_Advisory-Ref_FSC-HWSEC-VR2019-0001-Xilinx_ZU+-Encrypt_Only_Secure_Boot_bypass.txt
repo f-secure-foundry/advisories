@@ -1,0 +1,137 @@
+Security advisory: Xilinx ZU+ Encrypt Only Secure Boot bypass
+=============================================================
+
+The Xilinx Zynq UltraScale+ (ZU+) family of System-on-Chip (SoC) devices
+supports a secure boot mode referred to as "encrypt only".
+
+The encrypt only mode is an alternative to the "hardware root of trust" one,
+allowing secure boot without asymmetric authentication but which instead,
+quoting the ZU+ reference manual ([1] p279), "requires that all configuration
+loaded must be encrypted and authenticated using AES-GCM".
+
+Two design flaws have been identified that allow to execute arbitrary code,
+resulting in loss of authentication and confidentiality, leveraging on the lack
+of authentication for boot metadata, by means of boot image tampering.
+
+The flaws spawn from the lack of authentication for execution addresses
+specified in headers loaded early in the boot stage.
+
+Such headers are not encrypted and, lacking authentication, allow an external
+attacker to control, with some restrictions, loaded code execution addresses.
+
+The first design flaw is present in the boot header parsing, performed by the
+ZU+ internal boot ROM. Given that the internal boot ROM cannot be updated, only
+a new silicon revision by Xilinx, with an adequately patched boot ROM, can
+address the first vulnerability.
+
+The second flaw is present in the partition header table parsing, performed by
+the first-stage boot loader (FSBL). The second vulnerability can be addressed
+by software means, implementing authentication of the partition header, its
+resolution however cannot result in a safe use of the encrypt only mode as long
+as the first vulnerability remains unresolved.
+
+Loss of authentication allows the adversary sufficient control of the system
+such that loss of confidentiality can occur as well.
+
+It is highly recommended, for implementers of any secure boot or trust scheme
+which involves encryption, using ZU+ P/Ns, to only use the "hardware root of
+trust" mode.
+
+Xilinx ZU+ lack of authentication for boot header in encrypt only secure boot
+-----------------------------------------------------------------------------
+
+The first-stage boot loader (FSBL) execution address is a parameter included in
+the boot header, the first section of the boot image loaded by the ZU+ internal
+boot ROM.
+
+By design, the boot header is not authenticated under the "encrypt only" secure
+boot mode, this opens up the possibility of malicious tampering of the FSBL
+execution address, in a manner that allows arbitrary code execution.
+
+Such tampering can occur when a malicious party has the opportunity of
+modifying the boot header contents, for example by means of local boot device
+(e.g. SD) tampering.
+
+As a constraint to exploitation, the FSBL execution address must point to the
+On-chip memory (OCM) region. This means that the execution address cannot be
+directly pointed at arbitrarily controlled plaintext code stored in external
+memories (e.g. QSPI).
+
+This aspect does not prevent the possibility to exploit the issues, but merely
+increases the difficulty required.  A feasible scenario would be identifying a
+ROP “gadget” or jump, within the FSBL payload, which would allow to bypass the
+“encryption only” strategy enforcement.
+
+Xilinx ZU+ lack of authentication for partition headers in encrypt only secure boot
+-----------------------------------------------------------------------------------
+
+The destination execution address for boot partitions is a parameter included
+in partition headers, sections of the boot image loaded by first-stage boot
+loader (FSBL).
+
+By design, the partition headers are not authenticated under the "encrypt only"
+secure boot mode, this opens up the possibility of malicious tampering of the
+destination execution address, in a manner that allows arbitrary code
+execution.
+
+Such tampering can occur when a malicious party has the opportunity of
+modifying the boot header contents, for example by means of local boot device
+(e.g. SD) tampering.
+
+The exploitation of the destination execution address lack of authentication
+does not pose challenges as it can be manipulated to point at the partition
+header itself, which can be modified to include valid instructions and
+therefore achieving arbitrary code execution.
+
+Affected versions
+-----------------
+
+All Xilinx Zynq UltraScale+ P/Ns are believed to be vulnerable, tests have been
+performed against an Xilinx Zynq UltraScale+ MPSoC ZCU104 Evaluation Kit.
+
+Given that the internal boot ROM cannot be updated, only a new silicon revision
+by Xilinx, with an adequately patched boot ROM, can address the boot header
+lack of authentication.
+
+The partition header lack of authentication can be theoretically addressed with
+an FSBL patch, though none is available at this time.
+
+Credit
+------
+
+Vulnerabilities discovered and reported by the Inverse Path team at F-Secure,
+in collaboration with Robert Bosch GmbH.
+
+CVE
+---
+
+TBA: Xilinx ZU+ lack of authentication for boot header in encrypt only secure boot
+TBA: Xilinx ZU+ lack of authentication for partition headers in encrypt only secure boot
+
+Timeline
+--------
+
+2019-06-21: findings identified during a security audit by Inverse Path team at
+            F-Secure in collaboration with Robert Bosch GmbH.
+
+2019-06-25: findings shared with Bosch PSIRT.
+
+2019-06-28: findings shared with Xilinx PSIRT.
+
+2019-07-05: Xilinx PSIRT confirms the findings.
+
+2019-07-15: Xilinx PSIRT agrees to public disclosure process, consisting of a
+            Security Design Advisory and updates to the Technical Reference Manual.
+
+2019-08-12: Xilinx Design Advisory [2] and F-Secure advisory [3] release.
+
+References
+----------
+
+[1] https://www.xilinx.com/support/documentation/user_guides/ug1085-zynq-ultrascale-trm.pdf
+[2] https://www.xilinx.com/support/answers/72588.html
+
+Permalink
+---------
+
+[3] https://github.com/inversepath/advisories/blob/master/Security_Advisory-Ref_FSC-HWSEC-VR2019-0001-Xilinx_ZU+-Encrypt_Only_Secure_Boot_bypass.txt

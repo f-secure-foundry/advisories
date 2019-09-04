@@ -105,8 +105,8 @@ in collaboration with Robert Bosch GmbH.
 CVE
 ---
 
-TBA: Xilinx ZU+ lack of authentication for boot header in encrypt only secure boot
-TBA: Xilinx ZU+ lack of authentication for partition headers in encrypt only secure boot
+CVE-2019-5478: Xilinx ZU+ lack of authentication for boot header in encrypt only secure boot
+CVE-2019-5478: Xilinx ZU+ lack of authentication for partition headers in encrypt only secure boot
 
 Timeline
 --------
@@ -124,6 +124,8 @@ Timeline
             Security Design Advisory and updates to the Technical Reference Manual.
 
 2019-08-12: Xilinx Design Advisory [2] and F-Secure advisory [3] release.
+
+2019-09-03: Xilinx communicates assigned CVE.
 
 References
 ----------

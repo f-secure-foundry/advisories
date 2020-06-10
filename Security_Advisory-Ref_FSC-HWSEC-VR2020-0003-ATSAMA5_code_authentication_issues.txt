@@ -1,0 +1,176 @@
+Microchip ATSAMA5 SoC Multiple Vulnerabilities
+==============================================
+
+Multiple vulnerabilities have been discovered which affect the security of solutions
+built using the Microchip ATSAMA5 SoC series, when making use of the Secure Boot
+capabilities of these SoCs. This pre-release advisory describes the identified
+vulnerable situations and affected part numbers while trying to limit exposure for
+products integrating these SoCs. The full technical advisory will be released in
+the near future.
+
+
+Improper applet handling
+------------------------
+
+A programming error was discovered which allows an attacker to bypass existing
+security mechanisms related to applet handling when the attacked device is in
+Secure Mode.
+
+This only affects products which have Secure Monitor enabled.
+
+
+CMAC verification susceptible to SPA
+------------------------------------
+
+The AES-128 based CMAC authentication is used to prove authenticity and integrity
+of software components such as monitor applets and bootstrap code. The implementation
+of CMAC verification functionality was found to be vulnerable to timing and power
+analysis attacks.
+
+
+Hardcoded keys are used for protecting applets
+----------------------------------------------
+
+It was found that the key set used to encrypt and authenticate secure applets is
+hardcoded within the Secure Monitor and is available for abuse once this code has
+been extracted.
+
+This only affects products which have Secure Monitor enabled.
+
+
+Impact
+------
+
+The cumulative impact of the described issues leads to a significant compromise of
+the expected security guarantees provided by the Secure Boot feature when no
+mitigations are applied.
+
+
+Affected part numbers
+---------------------
+
+Affected CPNs for the SAMA5D2 product line:
+
+* ATSAMA5D21C-CU, ATSAMA5D21C-CUR
+* ATSAMA5D22C-CN, ATSAMA5D22C-CNR, ATSAMA5D22C-CU, ATSAMA5D22C-CUR
+* ATSAMA5D23C-CN, ATSAMA5D23C-CNR, ATSAMA5D23C-CU, ATSAMA5D23C-CUR
+* ATSAMA5D24C-CU, ATSAMA5D24C-CUF, ATSAMA5D24C-CUR
+* ATSAMA5D26C-CN, ATSAMA5D26C-CNR, ATSAMA5D26C-CU, ATSAMA5D26C-CUR
+* ATSAMA5D27C-CN, ATSAMA5D27C-CNR, ATSAMA5D27C-CU, ATSAMA5D27C-CUR
+* ATSAMA5D28C-CN, ATSAMA5D28C-CNR, ATSAMA5D28C-CU, ATSAMA5D28C-CUR
+* ATSAMA5D27C-CNVAO, ATSAMA5D27C-CNRVAO
+
+SiP variants:
+
+* ATSAMA5D225C-D1M-CUR
+* ATSAMA5D27C-D5M-CU, ATSAMA5D27C-D5M-CUR,
+* ATSAMA5D27C-D1G-CU, ATSAMA5D27C-D1G-CUR
+* ATSAMA5D28C-D1G-CU, ATSAMA5D28C-D1G-CUR
+* ATSAMA5D27C-LD1G-CU, ATSAMA5D27C-LD1G-CUR
+* ATSAMA5D27C-LD2G-CU, ATSAMA5D27C-LD2G-CUR
+* ATSAMA5D28C-LD1G-CU, ATSAMA5D28C-LD1G-CUR
+* ATSAMA5D28C-LD2G-CU, ATSAMA5D28C-LD2G-CUR
+
+SoM variants:
+
+* ATSAMA5D27-WLSOM1
+* ATSAMA5D27-SOM1
+
+Affected CPNs for the SAMA5D3 product line:
+
+* ATSAMA5D31A-CU, ATSAMA5D31A-CUR, ATSAMA5D31A-CFU, ATSAMA5D31A-CFUR
+* ATSAMA5D33A-CU, ATSAMA5D33A-CUR
+* ATSAMA5D34A-CU, ATSAMA5D34A-CUR
+* ATSAMA5D35A-CU, ATSAMA5D35A-CUR, ATSAMA5D35A-CN, ATSAMA5D35A-CNR
+* ATSAMA5D36A-CU, ATSAMA5D36A-CUR, ATSAMA5D36A-CN, ATSAMA5D36A-CNR 
+
+Affected CPNs for the SAMA5D4 product line:
+
+* ATSAMA5D41A-CU, ATSAMA5D41A-CUR, ATSAMA5D41B-CU, ATSAMA5D41B-CUR
+* ATSAMA5D42A-CU, ATSAMA5D42A-CUR, ATSAMA5D42B-CU, ATSAMA5D42B-CUR
+* ATSAMA5D43A-CU, ATSAMA5D43A-CUR, ATSAMA5D43B-CU, ATSAMA5D43B-CUR
+* ATSAMA5D44A-CU, ATSAMA5D44A-CUR, ATSAMA5D44B-CU, ATSAMA5D44B-CUR
+
+
+Solution
+--------
+
+For products based on the SAMA5D2 and SAMA5D4 devices, disabling the SAM-BA monitor
+after provisioning the chips mitigates all the reported issues. This can be done by
+setting the "Disable Monitor" bit in the fuse area.
+
+CMAC verification issue may be mitigated by choosing the RSA authentication option to
+replace CMAC calculation.
+
+For products based on the SAMA5D3 devices, no mitigations were identified. The only
+identified solution is to update the products to the next silicon revision when made
+available by Microchip.
+
+
+CVE assignment
+--------------
+
+CVE            | Issue
+---------------|-------
+CVE-2020-12787 | Improper applet verification
+CVE-2020-12788 | CMAC verification susceptible to SPA
+CVE-2020-12789 | Hardcoded keys are used for protecting applets
+
+
+Credit
+------
+
+The issues were discovered by Dmitry Janushkevich of F-Secure Hardware Security team.
+
+
+Detailed timeline
+-----------------
+
+YYYY-MM-DD | Event
+-----------|------
+2020-01-23 | Initial contact. Details and suggested mitigations provided to Microchip,
+             as well as proposing a 90 days disclosure timeline.
+2020-01-24 | Microchip confirms the reception.
+2020-01-28 | Microchip informs they are in the process of confirming the issues.
+2020-02-04 | F-Secure requests a status update.
+2020-02-05 | Microchip provides a status update and confirms the issues against 
+             SAMA5D27. Microchip intends to respond "in few days" regarding the 
+             disclosure timeline.
+2020-02-25 | F-Secure requests a status update.
+2020-02-27 | Microchip informs they are still working on identifying mitigations.
+2020-03-17 | F-Secure requests a status update.
+2020-03-19 | Microchip confirms SAMA5D3 and SAMA5D4 are also vulnerable, as well as
+             informing F-Secure that suggested mitigations may not be applicable for
+             all devices. Microchip starts planning a disclosure toward the customers.
+2020-04-20 | F-Secure informs Microchip about the embargo period expiring.
+2020-04-23 | 90 day disclosure deadline missed.
+2020-04-28 | Microchip informs regarding the mitigation plan for SAMA5D3. Microchip
+             requests postponing the disclosure until December 2020 or early 2021.
+2020-04-28 | F-Secure suggests timing the disclosure to the planned customer
+             communication activities as information will become effectively public
+             despite the limited amount of people being informed.
+2020-05-04 | Conference call between Microchip and F-Secure. An agreement is reached
+             for limited (what is vulnerable, impact) disclosure within weeks and 
+             full disclosure upon fixed part availability.
+2020-05-09 | Microchip provides a draft of planned customer communication document.
+             Also included is the list of affected part numbers for the D2 series.
+2020-05-11 | F-Secure requests CVE identifiers from MITRE.
+2020-05-12 | F-Secure provides a draft of planned limited disclosure document together
+             with feedback on the Microchip document.
+2020-05-19 | Microchip responds regarding the level of detail provided.
+2020-05-21 | F-Secure provides a second draft of planned limited disclosure document
+             with bare minimum of information included.
+2020-05-25 | Tentative deadline for limited disclosure missed.
+2020-05-30 | Microchip responds regarding the level of detail provided. Microchip also
+             informs about starting the dissemination of limited information among
+             select customers.
+2020-05-30 | Microchip provides the list of affected part numbers for the D3 and D4 series.
+2020-06-04 | F-Secure informs the vendor on the decision to adhere to the previously
+             discussed limited disclosure, setting the new deadline to 2020-06-10.
+2020-06-10 | Limited disclosure document published.
+
+
+References
+----------
+
+References will be provided upon availability from Microchip.

@@ -1,0 +1,195 @@
+Security advisory: OP-TEE TrustZone bypass on multiple NXP i.MX models
+======================================================================
+
+The Open Portable Trusted Execution Environment (OP-TEE) [1] is an open source
+Trusted Execution Enviroment (TEE) implementing the Arm TrustZone technology.
+
+F-Secure Foundry, in the process of developing its own TEE framework (GoTEE
+[2]), reviewed the existing Open Source offering and identified a vulnerability
+in OP-TEE support for the Central Security Unit (CSU) configuration of several
+NXP i.MX System-on-Chip (SoC) part numbers (P/Ns).
+
+Based on these findings F-Secure advises OP-TEE users to treat all OP-TEE
+supported platforms as insecure by default and carefully review their
+implementation before integration.
+
+TrustZone configuration on i.MX SoCs
+------------------------------------
+
+The following GoTEE tutorial [3] provides an in-depth explanation of the
+various aspects of an effective TrustZone configuration.
+
+In a nutshell, along with standardize ARM core configuration, each SoC requires
+its peripherals to be assigned to either the Secure World or Normal World (aka
+NonSecure World), which respectively represent the privileged and unprivileged
+TrustZone domains.
+
+When granting Normal World access to a specific peripheral it is essential to
+flag such peripheral as NonSecure, as the permissions for accessing peripherals
+are different than their privilege level.
+
+In other words if NonSecure World is granted access to a peripheral that can
+perform arbitrary memory read/write operations, it is vital to flag that
+peripheral as a NonSecure bus controller.
+
+Failure to do so results in a TrustZone bypass as the NonSecure World can
+simply use the peripherals to read/write Secure World memory.
+
+On the NXP i.MX family several peripherals can independently perform DMA, the
+prime example is the Smart Direct Memory Access (SDMA) controller. Another
+example would be the Ethernet controller (FEC/ENET) as it can be configured
+with arbitrary memory pointers for transmit/receive ring buffer location.
+
+The Central Security Unit (CSU) is the component that enables TrustZone
+peripheral configuration, on the NXP i.MX family, for all peripherals that are
+not capable of asserting TrustZone signals independently.
+
+The CSU Config Security Level (CSL) defines restrictions for accessing
+individual (or groups of) peripherals (e.g. whether a peripheral can be
+accessed from NonSecure World) while the Security Access (SA) defines their
+access security policy (e.g. whether a peripheral makes bus accesses as Secure
+or NonSecure).
+
+Vulnerability (CVE-2021-36133)
+------------------------------
+
+The OPTEE-OS CSU driver [4] sets a CSL which grants NonSecure access to most
+i.MX peripherals, with the exception of security sensitive ones such as the ROM
+patching controller (ROMCP) or the DCP cryptographic co-processor.
+
+However the SA is never set for several i.MX6 variants as well as the i.MX7,
+causing the CSU default Secure World access privilege to be applied.
+
+Additionally OP-TEE returns CSU initialization success on all SoC P/Ns which do
+not have an explicit configuration, a dangerous patterns which extends the
+vulnerability to the additional i.MX8 targets enabled on NXP own OP-TEE fork
+[5], as they do not have a specific CSU configuration.
+
+Impact
+------
+
+On vanilla OPTEE-OS the NXP i.MX6 and its ULL/ULZ, SL/SLL, SX variants as well
+as all NXP i.MX7 variants there is no effective TrustZone isolation as the
+Normal World can arbitrarily read/write Secure World memory, resulting in a
+full compromise of the Trusted Execution Environment.
+
+On NXP OP-TEE fork [5], the same vulnerability applies but its scope is
+extended to the additional supported for the i.MX8 SoC family.
+
+Vendor response
+---------------
+
+On June 30th the OP-TEE projects communicated their assessment of the reported
+issue to a severity rating of "low", with the reasoning copied in verbatim
+below.
+
+F-Secure believes that the OP-TEE should either provide an explicitly "open"
+configuration, with clear documentation notices, or working protection for
+Secure World assigned peripherals.
+
+The official platform support for the findings in scope instead includes an
+inconsistent configuration which gives the illusion of protection (per [4] own
+comments) without it being effective.
+
+F-Secure advises OP-TEE users to treat all OP-TEE supported platforms as
+insecure by default and carefully review their implementation before
+integration.
+
+The following quote is the verbatim response from the OP-TEE project:
+
+"After further discussions and in agreement with NXP we've decided to
+downgrade this from a severity high to low (an informative issue), which
+means that it'll not be treated as a security vulnerability. The reasons
+are as stated by NXP below.
+
+We have similar standpoints in the OP-TEE project where we for example have
+added a disclaimer to the Raspberry Pi section [1] and as another example we
+have a "porting guidelines" [2] where we mentioned that the HUK is stubbed and
+that the Trusted Application RSA keys are just example keys that needs to be
+replaced by the one intending to make a secure product. I.e., for open source
+projects working as reference builds there are in some cases configurations
+that are needed to make a final product secure, but cannot be enabled for
+various reasons in the reference build.
+
+As mentioned by NXP, they will submit a documentation patch to the OP-TEE
+project that adds a similar section for NXP devices that clarifies this.
+
+Trusted Stakeholders to the OP-TEE project have already been notified once and
+they will receive an additional update containing the same information as
+you've received here.
+
+[1] https://optee.readthedocs.io/en/latest/building/devices/rpi3.html
+[2] https://optee.readthedocs.io/en/latest/architecture/porting_guidelines.html
+
+NXP statements:
+
+- NXP acknowledges the fact that going into production with the default i.MX
+  CSU configuration in OP-TEE represents a security issue.
+
+- However NXP is not responsible for the security configuration of OP-TEE :
+  it’s up to the customer/developer to lock and secure the platforms according
+  to their specific needs.
+
+- NXP cannot provide a secure configuration for OP-TEE that fits all customer
+  needs : that’s why by default, the i.MX security in OP-TEE OS is open. Trying
+  to satisfy all security needs for all different possible configurations at the
+  same time is not doable.
+
+- The CSU documentation and steps to configure it properly is available in the
+  i.MX Reference Manual.
+
+- NXP does not deliver OP-TEE OS as a product but as enablement software.  NXP
+  does not implement security but NXP provides tools and software for the
+  customer to implement security.
+
+- NXP will publish a NXP/i.MX dedicated section in the OP-TEE documentation
+  where a disclaimer will warn about this default open security configuration
+  of i.MX platforms.
+"
+
+It should be noted that NXP statement on CSU documentation is incorrect and
+that "i.MX Reference Manual" should read "i.MX Security Reference Manual"
+(typically available under EULA/NDA).
+
+Affected versions
+-----------------
+
+The OPTEE-OS component of all OP-TEE releases supporting NXP i.MX P/Ns are
+vulnerable, this includes any fork (such as the NXP one [5]) based on them.
+
+Credit
+------
+
+Vulnerabilities discovered and reported by Andrea Barisani and Andrej Rosano
+(F-Secure Foundry [6]).
+
+CVE
+---
+
+CVE-2021-36133: OP-TEE TrustZone bypass on multiple NXP i.MX models
+
+Timeline
+--------
+
+2021-06-07: findings reported by F-Secure to OP-TEE security contact.
+2021-06-10: OP-TEE confirms the findings, requests 90 days embargo.
+2021-06-10: OP-TEE communicates that NXP ranks the findings as high severity.
+2021-06-11: F-Secure requests 30 days embargo.
+2021-06-30: OP-TEE downgrades the findings severity from high to low.
+2021-07-02: F-Secure receives CVE assignment from MITRE.
+2021-07-12: advisory release.
+
+References
+----------
+
+[1] https://www.op-tee.org/
+[2] https://github.com/f-secure-foundry/GoTEE
+[3] https://github.com/f-secure-foundry/GoTEE/wiki/TrustZone-configuration
+[4] https://github.com/OP-TEE/optee_os/blob/3.13.0/core/arch/arm/plat-imx/drivers/imx_csu.c
+[5] https://source.codeaurora.org/external/imx/imx-optee-os/tree/core/arch/arm/plat-imx/drivers/imx_csu.c?h=imx_5.4.70_2.3.0
+[6] https://foundry.f-secure.com
+
+Permalink
+---------
+
+https://github.com/f-secure-foundry/advisories/blob/master/Security_Advisory-Ref_FSC-HWSEC-VR2021-0001-OP-TEE_TrustZone_bypass.txt

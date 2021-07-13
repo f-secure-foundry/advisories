@@ -151,6 +151,9 @@ It should be noted that NXP statement on CSU documentation is incorrect and
 that "i.MX Reference Manual" should read "i.MX Security Reference Manual"
 (typically available under EULA/NDA).
 
+The OP-TEE project released their own advisory in relation to F-Secure report
+[7].
+
 Affected versions
 -----------------
 
@@ -178,6 +181,7 @@ Timeline
 2021-06-30: OP-TEE downgrades the findings severity from high to low.
 2021-07-02: F-Secure receives CVE assignment from MITRE.
 2021-07-12: advisory release.
+2021-07-13: added OP-TEE advisory link.
 
 References
 ----------
@@ -188,6 +192,7 @@ References
 [4] https://github.com/OP-TEE/optee_os/blob/3.13.0/core/arch/arm/plat-imx/drivers/imx_csu.c
 [5] https://source.codeaurora.org/external/imx/imx-optee-os/tree/core/arch/arm/plat-imx/drivers/imx_csu.c?h=imx_5.4.70_2.3.0
 [6] https://foundry.f-secure.com
+[7] https://github.com/OP-TEE/optee_os/security/advisories/GHSA-6q85-3ph3-rm47
 
 Permalink
 ---------

@@ -1,12 +1,12 @@
 CVE-2016-1734 - AppleUSBNetworking memory corruption
 
-Inverse Path (https://inversepath.com) identified a potential security
+Inverse Path (https://www.inversepath.com) identified a potential security
 vulnerability in the way OS X handles RNDIS/Ethernet gadgets USB devices,
 advertising invalid USB descriptor information.
 
 The RNDIS driver is commonly used for emulating Ethernet TCP/IP connectivity
 on USB devices such as mobile phones or custom boards such as our USB armory
-(https://inversepath.com/usbarmory).
+(https://github.com/f-secure-foundry/usbarmory).
 
 While testing descriptor manipulation we found that a high-speed USB device,
 advertising specific descriptors which match full-speed values, caused the OS

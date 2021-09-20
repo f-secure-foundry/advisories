@@ -2,7 +2,7 @@
 
 The following advisories cover security issues discovered, or contributed, by
 the team at [F-Secure](https://foundry.f-secure.com) Hardware Security Team,
-previously known as [Inverse Path](https://inversepath.com).
+previously known as [Inverse Path](https://www.inversepath.com).
 
 | CVEs                                                                            | Description                                                      | Advisory
 |---------------------------------------------------------------------------------|------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

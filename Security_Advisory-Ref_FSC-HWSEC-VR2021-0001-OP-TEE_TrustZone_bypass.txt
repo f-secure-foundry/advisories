@@ -68,7 +68,7 @@ vulnerability to the additional i.MX8 targets enabled on NXP own OP-TEE fork
 Impact
 ------
 
-On vanilla OPTEE-OS the NXP i.MX6 and its UL/ULL/ULZ, SL/SLL, SX variants as
+On vanilla OPTEE-OS the NXP i.MX6 and its ULL/ULZ, SL/SLL, SX variants as
 well as all NXP i.MX7 variants have no effective TrustZone isolation as the
 Normal World can arbitrarily read/write Secure World memory, resulting in a
 full compromise of the Trusted Execution Environment.
@@ -182,7 +182,6 @@ Timeline
 2021-07-02: F-Secure receives CVE assignment from MITRE.
 2021-07-12: advisory release.
 2021-07-13: added OP-TEE advisory link.
-2021-10-27: clarify that i.MX6UL variant is also impacted.
 
 References
 ----------

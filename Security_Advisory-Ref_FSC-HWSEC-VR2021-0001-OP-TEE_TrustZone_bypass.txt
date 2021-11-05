@@ -2,7 +2,7 @@ Security advisory: OP-TEE TrustZone bypass on multiple NXP i.MX models
 ======================================================================
 
 The Open Portable Trusted Execution Environment (OP-TEE) [1] is an open source
-Trusted Execution Enviroment (TEE) implementing the Arm TrustZone technology.
+Trusted Execution Environment (TEE) implementing the Arm TrustZone technology.
 
 F-Secure Foundry, in the process of developing its own TEE framework (GoTEE
 [2]), reviewed the existing Open Source offering and identified a vulnerability
@@ -68,10 +68,10 @@ vulnerability to the additional i.MX8 targets enabled on NXP own OP-TEE fork
 Impact
 ------
 
-On vanilla OPTEE-OS the NXP i.MX6 and its ULL/ULZ, SL/SLL, SX variants as
-well as all NXP i.MX7 variants have no effective TrustZone isolation as the
-Normal World can arbitrarily read/write Secure World memory, resulting in a
-full compromise of the Trusted Execution Environment.
+On vanilla OPTEE-OS the NXP i.MX6 and its ULL/ULZ, SL/SLL, SX variants as well
+as all NXP i.MX7 variants have no effective TrustZone isolation as the Normal
+World can arbitrarily read/write Secure World memory, resulting in a full
+compromise of the Trusted Execution Environment.
 
 On NXP OP-TEE fork [5], the same vulnerability applies but its scope is
 extended to the additional supported for the i.MX8 SoC family.

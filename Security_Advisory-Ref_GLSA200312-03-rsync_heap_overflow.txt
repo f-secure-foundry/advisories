@@ -84,7 +84,7 @@ response:
    * Paul Russell <rusty samba.org>
 
    * Andrea Barisani <lcars gentoo.org>
-   
+
 Regards,
 
 The rsync team

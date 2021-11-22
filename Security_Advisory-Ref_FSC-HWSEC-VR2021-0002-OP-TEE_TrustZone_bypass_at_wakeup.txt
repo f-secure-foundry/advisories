@@ -1,0 +1,153 @@
+Security advisory: OP-TEE TrustZone bypass at wakeup on NXP i.MX6UL
+===================================================================
+
+The Open Portable Trusted Execution Environment (OP-TEE) [1] is an open source
+Trusted Execution Environment (TEE) implementing the Arm TrustZone technology.
+
+F-Secure Foundry, in the process of developing its own TEE framework (GoTEE
+[2]), reviewed the existing Open Source offering and identified a vulnerability
+in OP-TEE support for the Central Security Unit (CSU) configuration on the NXP
+i.MX6UL System-on-Chip (SoC).
+
+Based on this, as well as previous [7] findings, F-Secure advises OP-TEE users
+to treat all OP-TEE supported platforms as insecure by default and carefully
+review and practically test their implementation before integration.
+
+TrustZone configuration on i.MX SoCs
+------------------------------------
+
+The following GoTEE tutorial [3] provides an in-depth explanation of the
+various aspects of an effective TrustZone configuration.
+
+In a nutshell, along with standard ARM core configuration, each SoC requires
+its peripherals to be assigned to either the Secure World or Normal World (aka
+NonSecure World), which respectively represent the privileged and unprivileged
+TrustZone domains.
+
+The Central Security Unit (CSU) is the component that enables TrustZone
+peripheral configuration on the NXP i.MX family for peripherals that are
+not capable of asserting TrustZone signals independently.
+
+The CSU Config Security Level (CSL) defines restrictions for accessing
+individual (or groups of) peripherals (e.g. whether a peripheral can be
+accessed from NonSecure World) while the Security Access (SA) defines the
+access security policy for the peripheral (e.g. whether the peripheral
+makes bus accesses as "Secure" or "NonSecure").
+
+Vulnerability (CVE-2021-44149)
+------------------------------
+
+The OP-TEE OS CSU driver [4] sets the CSU Security Access (SA) policy for the
+ARM Cortex-A7 block (CA7) to "Secure" for its NXP i.MX6UL SoC support.
+
+The NXP documentation on the role of the CA7 SA setting does not provide any
+details on its effects, therefore F-Secure conducted a thorough analysis of its
+impact when set as "Secure".
+
+It has been verified that a CA7 SA set to "Secure" allows to suspend a
+processor in "NonSecure" security state and have it wakeup from low power mode
+in Secure World.
+
+The wakeup sequence implemented in the NXP i.MX6UL boot ROM jumps, in secure
+processor state, to function pointers held in the System Reset Controller (SRC)
+registers. The vulnerability takes place when the Normal World OS is allowed to
+set the SRC wakeup pointers before going in low power mode.
+
+For example when running Linux under OP-TEE OS, which sets the CA7 SA to
+"Secure", the boot ROM executes a wakeup handler previously configured by
+Normal World Linux, within Secure World. This results in Linux re-initializing
+the MMU and resuming all its execution context as Secure World.
+
+This configuration effectively bypasses any intended TrustZone protection as
+the Normal World OS is capable of transforming itself, through a low power
+suspend/wakeup procedure, to a Secure one.
+
+Impact
+------
+
+On vanilla OP-TEE OS the NXP i.MX6UL SoC has no effective TrustZone isolation
+as the Normal World can arbitrarily change its processor state to Secure World,
+resulting in a full compromise of the Trusted Execution Environment.
+
+The same vulnerability also applies to the NXP OP-TEE fork [5].
+
+Mitigation
+----------
+
+When suspend/wakeup functionality is required the sequence must be handled by
+the Secure World TEE and the CSU Config Security Level (CSL) must be set to
+protect, from Normal World access, all blocks responsible for the wakeup
+sequence such as the GPC and SRC blocks on the i.MX6UL SoC family.
+
+When suspend/wakeup functionality is not required, implementers of trusted
+firmware using the OP-TEE framework must re-configure the SA policy ensuring
+that the CA7 value is set as "NonSecure" prior to Normal World execution.
+
+When running Linux in Normal World this is incompatible with Linux power
+management drivers which require SRC support on i.MX6 SoCs (example:
+`CONFIG_CPU_IDLE`).
+
+It is emphasized that the role of CA7 SA policy bit has been identified by
+F-Secure through testing and is pending verification by NXP on its complete
+effects.
+
+Please also note that such mitigations do not constitute an example of a fully
+secure configuration and only focus on the specific aspects reported in this
+advisory.
+
+Vendor response
+---------------
+
+The OP-TEE project own security advisory can be found at [8].
+
+Affected versions
+-----------------
+
+The OP-TEE OS component of all OP-TEE releases supporting the NXP i.MX6UL SoC
+is vulnerable, this includes any fork (such as the NXP one [5]) based on them
+that does not correctly prevent Normal World control of the System Reset
+Controller (SRC) wakeup execution context.
+
+Please be advised that OP-TEE does not provide a secure CSU configuration on
+multiple NXP i.MX P/Ns for reasons which go beyond this specific finding (see
+CVE-2021-36133 [7]).
+
+Credit
+------
+
+Vulnerabilities discovered and reported by Andrea Barisani and Andrej Rosano
+(F-Secure Foundry [6]).
+
+CVE
+---
+
+CVE-2021-44149: OP-TEE TrustZone bypass at wakeup on NXP i.MX6UL
+
+Timeline
+--------
+
+2021-11-05: findings reported by F-Secure to OP-TEE security contact.
+2021-11-05: F-Secure requests 14 days embargo.
+2021-11-18: OP-TEE requests 60 days embargo.
+2021-11-18: OP-TEE and NXP confirms the finding.
+2021-11-18: OP-TEE confirms no mitigation will be applied, only improved docs.
+2021-11-18: F-Secure confirms initial 14 days embargo.
+2021-11-22: F-Secure receives CVE-2021-44149 assignment from MITRE.
+2021-11-22: advisory release.
+
+References
+----------
+
+[1] https://www.op-tee.org/
+[2] https://github.com/f-secure-foundry/GoTEE
+[3] https://github.com/f-secure-foundry/GoTEE/wiki/TrustZone-configuration
+[4] https://github.com/OP-TEE/optee_os/blob/3.15.0/core/arch/arm/plat-imx/drivers/imx_csu.c
+[5] https://source.codeaurora.org/external/imx/imx-optee-os/tree/core/arch/arm/plat-imx/drivers/imx_csu.c?h=lf-5.10.52_2.1.0
+[6] https://foundry.f-secure.com
+[7] https://github.com/f-secure-foundry/advisories/blob/master/Security_Advisory-Ref_FSC-HWSEC-VR2021-0001-OP-TEE_TrustZone_bypass.txt
+[8] https://github.com/OP-TEE/optee_os/security/advisories/GHSA-4pqr-q8rf-8464
+
+Permalink
+---------
+
+https://github.com/f-secure-foundry/advisories/blob/master/Security_Advisory-Ref_FSC-HWSEC-VR2021-0002-OP-TEE_TrustZone_bypass_at_wakeup.txt

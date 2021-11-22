@@ -53,7 +53,7 @@ or NonSecure).
 Vulnerability (CVE-2021-36133)
 ------------------------------
 
-The OPTEE-OS CSU driver [4] sets a CSL which grants NonSecure access to most
+The OP-TEE OS CSU driver [4] sets a CSL which grants NonSecure access to most
 i.MX peripherals, with the exception of security sensitive ones such as the ROM
 patching controller (ROMCP) or the DCP cryptographic co-processor.
 
@@ -65,13 +65,20 @@ not have an explicit configuration, a dangerous patterns which extends the
 vulnerability to the additional i.MX8 targets enabled on NXP own OP-TEE fork
 [5], as they do not have a specific CSU configuration.
 
+Vulnerability (CVE-2021-44149)
+------------------------------
+
+The OP-TEE OS CSU driver [4] sets an SA for the NXP i.MX6UL P/N, however this
+SA is affected by additional vulnerabilities, see the separate advisories ([8]
+and [9]) for further information.
+
 Impact
 ------
 
-On vanilla OPTEE-OS the NXP i.MX6 and its ULL/ULZ, SL/SLL, SX variants as well
-as all NXP i.MX7 variants have no effective TrustZone isolation as the Normal
-World can arbitrarily read/write Secure World memory, resulting in a full
-compromise of the Trusted Execution Environment.
+On vanilla OP-TEE OS the NXP i.MX6 and its UL/ULL/ULZ, SL/SLL, SX variants as
+well as all NXP i.MX7 variants have no effective TrustZone isolation as the
+Normal World can arbitrarily read/write Secure World memory, resulting in a
+full compromise of the Trusted Execution Environment.
 
 On NXP OP-TEE fork [5], the same vulnerability applies but its scope is
 extended to the additional supported for the i.MX8 SoC family.
@@ -157,7 +164,7 @@ The OP-TEE project released their own advisory in relation to F-Secure report
 Affected versions
 -----------------
 
-The OPTEE-OS component of all OP-TEE releases supporting NXP i.MX P/Ns are
+The OP-TEE OS component of all OP-TEE releases supporting NXP i.MX P/Ns are
 vulnerable, this includes any fork (such as the NXP one [5]) based on them.
 
 Credit
@@ -179,9 +186,10 @@ Timeline
 2021-06-10: OP-TEE communicates that NXP ranks the findings as high severity.
 2021-06-11: F-Secure requests 30 days embargo.
 2021-06-30: OP-TEE downgrades the findings severity from high to low.
-2021-07-02: F-Secure receives CVE assignment from MITRE.
+2021-07-02: F-Secure receives CVE-2021-36133 assignment from MITRE.
 2021-07-12: advisory release.
 2021-07-13: added OP-TEE advisory link.
+2021-11-22: added reference to CVE-2021-44149 advisories.
 
 References
 ----------
@@ -193,6 +201,8 @@ References
 [5] https://source.codeaurora.org/external/imx/imx-optee-os/tree/core/arch/arm/plat-imx/drivers/imx_csu.c?h=imx_5.4.70_2.3.0
 [6] https://foundry.f-secure.com
 [7] https://github.com/OP-TEE/optee_os/security/advisories/GHSA-6q85-3ph3-rm47
+[8] https://github.com/f-secure-foundry/advisories/blob/master/Security_Advisory-Ref_FSC-HWSEC-VR2021-0002-OP-TEE_TrustZone_bypass.txt
+[9] https://github.com/OP-TEE/optee_os/security/advisories/GHSA-4pqr-q8rf-8464
 
 Permalink
 ---------

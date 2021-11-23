@@ -128,7 +128,7 @@ Timeline
 
 2021-11-05: findings reported by F-Secure to OP-TEE security contact.
 2021-11-05: F-Secure requests 14 days embargo.
-2021-11-18: OP-TEE requests 60 days embargo.
+2021-11-18: OP-TEE requests 30 days embargo.
 2021-11-18: OP-TEE and NXP confirms the finding.
 2021-11-18: OP-TEE confirms no mitigation will be applied, only improved docs.
 2021-11-18: F-Secure confirms initial 14 days embargo.

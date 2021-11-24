@@ -189,7 +189,7 @@ Timeline
 2021-07-02: F-Secure receives CVE-2021-36133 assignment from MITRE.
 2021-07-12: advisory release.
 2021-07-13: added OP-TEE advisory link.
-2021-11-22: added reference to CVE-2021-44149 advisories.
+2021-11-22: added reference to CVE-2021-44149 advisory.
 
 References
 ----------

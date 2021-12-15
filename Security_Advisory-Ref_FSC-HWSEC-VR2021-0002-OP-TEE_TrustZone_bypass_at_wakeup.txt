@@ -42,25 +42,31 @@ ARM Cortex-A7 block (CA7) to "Secure" for its NXP i.MX6UL SoC support.
 
 The NXP documentation on the role of the CA7 SA setting does not provide any
 details on its effects, therefore F-Secure conducted a thorough analysis of its
-impact when set as "Secure".
+manipulation, which resulted in identification of a vulnerability.
 
-It has been verified that a CA7 SA set to "Secure" allows to suspend a
-processor in "NonSecure" security state and have it wakeup from low power mode
-in Secure World.
+It has been verified that the OP-TEE configuration allows a processor suspended
+in Normal World security state to wake up from low power mode in Secure World
+state.
 
 The wakeup sequence implemented in the NXP i.MX6UL boot ROM jumps, in secure
 processor state, to function pointers held in the System Reset Controller (SRC)
 registers. The vulnerability takes place when the Normal World OS is allowed to
 set the SRC wakeup pointers before going in low power mode.
 
-For example when running Linux under OP-TEE OS, which sets the CA7 SA to
-"Secure", the boot ROM executes a wakeup handler previously configured by
-Normal World Linux, within Secure World. This results in Linux re-initializing
-the MMU and resuming all its execution context as Secure World.
+For example when running Linux under OP-TEE OS the boot ROM executes a wakeup
+handler previously configured by Normal World Linux, within Secure World. This
+results in Linux re-initializing the MMU and resuming all its execution context
+as Secure World.
 
 This configuration effectively bypasses any intended TrustZone protection as
 the Normal World OS is capable of transforming itself, through a low power
 suspend/wakeup procedure, to a Secure one.
+
+It should be highlighted that the boot ROM unconditionally wakes up in secure
+processor state. The CA7 SA only affects the CP15SDISABLE input signal which,
+when set as "NonSecure", causes a fault in the boot ROM code, even if running
+in Secure World, as it becomes incapable of accessing specific secure registers
+needed by its wake up flow.
 
 Impact
 ------
@@ -74,22 +80,23 @@ The same vulnerability also applies to the NXP OP-TEE fork [5].
 Mitigation
 ----------
 
-When suspend/wakeup functionality is required the sequence must be handled by
-the Secure World TEE and the CSU Config Security Level (CSL) must be set to
-protect, from Normal World access, all blocks responsible for the wakeup
-sequence such as the GPC and SRC blocks on the i.MX6UL SoC family.
+Any suspend/wakeup functionality must be handled by the Secure World TEE as the
+CSU Config Security Level (CSL) must be set to protect, from Normal World
+access, all blocks responsible for the wakeup sequence such as the GPC and SRC
+blocks on the i.MX6UL SoC family.
 
 When suspend/wakeup functionality is not required, implementers of trusted
-firmware using the OP-TEE framework must re-configure the SA policy ensuring
+firmware using the OP-TEE framework can re-configure the SA policy ensuring
 that the CA7 value is set as "NonSecure" prior to Normal World execution.
 
 When running Linux in Normal World this is incompatible with Linux power
 management drivers which require SRC support on i.MX6 SoCs (example:
 `CONFIG_CPU_IDLE`).
 
-It is emphasized that the role of CA7 SA policy bit has been identified by
-F-Secure through testing and is pending verification by NXP on its complete
-effects.
+It is emphasized that changing the CA7 SA policy bit to "NonSecure", while
+effective, represents a weaker form of mitigation as the exploitation of the
+vulnerability is only incidentally prevented, the proper mitigation remains the
+CSL protection for the responsible GPC and SRC blocks.
 
 Please also note that such mitigations do not constitute an example of a fully
 secure configuration and only focus on the specific aspects reported in this
@@ -134,6 +141,7 @@ Timeline
 2021-11-18: F-Secure confirms initial 14 days embargo.
 2021-11-22: F-Secure receives CVE-2021-44149 assignment from MITRE.
 2021-11-22: advisory release.
+2021-12-15: NXP clarifies CA7 SA affecting only CP15SDISABLE, update mitigation.
 
 References
 ----------
